@@ -1,0 +1,30 @@
+# 🛑 Ignorer les dossiers de l'environnement virtuel
+venv/
+.env/
+
+# 🛑 Fichiers de configuration cachés
+*.pyc
+__pycache__/
+*.log
+desktop.ini
+
+# 🛑 Fichiers spécifiques à l'IDE (VS Code, PyCharm, etc.)
+.vscode/
+.idea/
+target/
+dist/
+build/
+
+# 🛑 Clés API ou variables d'environnement
+#.env
+#config.json
+#secrets.json
+
+# 🛑 Dépendances et fichiers générés
+#*.csv
+#*.sqlite
+#*.db
+#*.ipynb_checkpoints/
+
+# 🛑 Exclure le fichier .gitignore lui-même ? NON !
+!.gitignore  # (Cette ligne empêche d'ignorer le .gitignore lui-même)
