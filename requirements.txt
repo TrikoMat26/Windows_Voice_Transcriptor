@@ -7,3 +7,4 @@ soundfile==0.13.1
 numpy==2.2.6
 openai==1.82.1
 pyperclip==1.9.0
+requests==2.31.0
