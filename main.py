@@ -18,6 +18,7 @@ import openai
 import requests
 import pyperclip
 import platform
+import webbrowser
 
 ICON_PATH = os.path.join(os.path.dirname(__file__), "mic.png")  # mets une icône dans ton dossier
 
@@ -59,8 +60,6 @@ class AudioRecorder(QMainWindow):
             )
             sys.exit(1)
 
-        self.remaining_credits = None
-        self.fetch_openai_credits()
 
         # Systray
         self.setup_systray()
@@ -205,14 +204,14 @@ class AudioRecorder(QMainWindow):
         self.file_path_label.setWordWrap(True)
         self.file_path_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
-        self.credits_label = QLabel()
-        self.credits_label.setAlignment(Qt.AlignCenter)
-        self.credits_label.setStyleSheet("font-size: 12px; color: #555;")
+
+        self.billing_btn = QPushButton("Voir mes crédits OpenAI")
+        self.billing_btn.clicked.connect(lambda: webbrowser.open("https://platform.openai.com/account/billing"))
+        layout.addWidget(self.billing_btn, alignment=Qt.AlignCenter)
 
         layout.addWidget(self.time_label, alignment=Qt.AlignCenter)
         layout.addWidget(self.button_container, alignment=Qt.AlignCenter)
         layout.addWidget(self.file_path_label, alignment=Qt.AlignCenter)
-        layout.addWidget(self.credits_label, alignment=Qt.AlignCenter)
 
         self.loading_widget = QWidget()
         loading_layout = QVBoxLayout(self.loading_widget)
@@ -305,7 +304,6 @@ class AudioRecorder(QMainWindow):
         self.loading_label.setText(message)
         self.loading_label.setStyleSheet("color: #4CAF50; font-size: 16px; font-weight: bold;")
         self.progress_bar.hide()
-        self.fetch_openai_credits()
         QTimer.singleShot(close_delay, self.reset_ui_for_next_transcription)
 
     def reset_ui_for_next_transcription(self):
@@ -386,26 +384,8 @@ class AudioRecorder(QMainWindow):
         self.recording = False
         self.timer.stop()
 
-    def fetch_openai_credits(self):
-        try:
-            url = "https://api.openai.com/dashboard/billing/credit_grants"
-            headers = {"Authorization": f"Bearer {openai.api_key}"}
-            resp = requests.get(url, headers=headers, timeout=10)
-            if resp.status_code == 200:
-                data = resp.json()
-                self.remaining_credits = data.get("total_available")
-            else:
-                self.remaining_credits = None
-        except Exception:
-            self.remaining_credits = None
-        self.update_credit_label()
 
-    def update_credit_label(self):
-        if self.remaining_credits is None:
-            text = "Cr\u00e9dits restants : N/A"
-        else:
-            text = f"Cr\u00e9dits restants : {self.remaining_credits:.2f}$"
-        self.credits_label.setText(text)
+
 
     def hide_to_systray(self):
         self.hide()
