@@ -73,7 +73,7 @@ class AudioRecorder(QMainWindow):
 
     def setup_systray(self):
         self.tray_icon = QSystemTrayIcon(QIcon(ICON_PATH), self)
-        self.tray_icon.setToolTip("Enregistreur Vocal (F9 pour démarrer/arrêter)")
+        self.tray_icon.setToolTip("Enregistreur Vocal (F9 pour Afficher/Masquer & Démarrer/Arrêter)")
         tray_menu = QMenu(self)
         show_action = QAction("Afficher la fenêtre", self)
         show_action.triggered.connect(self.show_normal_window)
