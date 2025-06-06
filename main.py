@@ -367,6 +367,7 @@ class AudioRecorder(QMainWindow):
     def cancel_recording(self):
         if self.recording:
             self.stop_recording()
+        self.reset_ui_for_next_transcription()  # Ajoute cette ligne pour réinitialiser l'UI
         self.hide_to_systray()
 
     def stop_recording(self):
