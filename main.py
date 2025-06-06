@@ -105,8 +105,7 @@ class AudioRecorder(QMainWindow):
             )
             sys.exit(1)
 
-        # Systray
-        self.setup_systray()
+
 
         self.show_success_signal.connect(self.show_success)
         self.show_error_signal.connect(self.show_error)
@@ -117,20 +116,8 @@ class AudioRecorder(QMainWindow):
 
         self.force_quit = False
 
-    def setup_systray(self):
-        self.tray_icon = QSystemTrayIcon(QIcon(ICON_PATH), self)
-        self.tray_icon.setToolTip("Enregistreur Vocal (F9 pour démarrer/arrêter)")
-        tray_menu = QMenu(self)
-        show_action = QAction("Afficher la fenêtre", self)
-        show_action.triggered.connect(self.show_normal_window)
-        quit_action = QAction("Quitter", self)
-        quit_action.triggered.connect(self.quit_app)
-        tray_menu.addAction(show_action)
-        tray_menu.addSeparator()
-        tray_menu.addAction(quit_action)
-        self.tray_icon.setContextMenu(tray_menu)
-        self.tray_icon.show()
-        self.tray_icon.activated.connect(self.handle_systray_activation)
+
+
 
     @Slot()
     def show_normal_window(self):
@@ -141,23 +128,15 @@ class AudioRecorder(QMainWindow):
             import ctypes
             hwnd = int(self.winId())
             SW_RESTORE = 9
-            # 1. Restaurer si minimisée
             ctypes.windll.user32.ShowWindow(hwnd, SW_RESTORE)
-            # 2. Mettre en topmost puis normal
-            ctypes.windll.user32.SetWindowPos(hwnd, -1, 0, 0, 0, 0, 0x0001 | 0x0002)  # HWND_TOPMOST
-            ctypes.windll.user32.SetWindowPos(hwnd, -2, 0, 0, 0, 0, 0x0001 | 0x0002)  # HWND_NOTOPMOST
-            # 3. Forcer le focus
             ctypes.windll.user32.SetForegroundWindow(hwnd)
+
 
     @Slot()
     def quit_app(self):
-        self.force_quit = True
-        self.tray_icon.hide()
         self.close()
 
-    def handle_systray_activation(self, reason):
-        if reason == QSystemTrayIcon.Trigger:
-            self.show_normal_window()
+
 
     def get_platform_stylesheet(self):
         base_style = """
@@ -389,7 +368,6 @@ class AudioRecorder(QMainWindow):
         self.time_label.setText("00:00")
         self.file_path_label.setText("")
         self.recording = False
-        self.hide_to_systray()
 
     def finish_recording(self):
         if not self.recording:
@@ -449,8 +427,8 @@ class AudioRecorder(QMainWindow):
     def cancel_recording(self):
         if self.recording:
             self.stop_recording()
-        self.reset_ui_for_next_transcription()  # Ajoute cette ligne pour réinitialiser l'UI
-        self.hide_to_systray()
+        self.reset_ui_for_next_transcription()  # Réinitialise l'UI
+        self.showMinimized()  # Minimise la fenêtre
 
     def stop_recording(self):
         if hasattr(self, 'stream') and self.stream.active:
@@ -459,30 +437,20 @@ class AudioRecorder(QMainWindow):
         self.recording = False
         self.timer.stop()
 
-    def hide_to_systray(self):
-        self.hide()
+
 
     def closeEvent(self, event):
-        if self.force_quit:
-            event.accept()
-        else:
-            event.ignore()
-            self.hide_to_systray()
-            self.tray_icon.showMessage(
-                "Toujours actif",
-                "L'application reste disponible dans la barre système.",
-                QSystemTrayIcon.Information,
-                2000
-            )
+        event.accept()
+
 
 def main():
     app = QApplication(sys.argv)
     if is_already_running():
-        send_show_request()  # <-- Affiche la fenêtre de l'instance déjà lancée
+        send_show_request()
         return
     recorder = AudioRecorder()
-    start_local_server(recorder)  # Pour gestion systray multi-instance
-    recorder.hide_to_systray()
+    start_local_server(recorder)
+    recorder.show()
     sys.exit(app.exec())
 
 if __name__ == "__main__":
