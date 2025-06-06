@@ -137,6 +137,17 @@ class AudioRecorder(QMainWindow):
         self.showNormal()
         self.raise_()
         self.activateWindow()
+        if platform.system() == "Windows":
+            import ctypes
+            hwnd = int(self.winId())
+            SW_RESTORE = 9
+            # 1. Restaurer si minimisée
+            ctypes.windll.user32.ShowWindow(hwnd, SW_RESTORE)
+            # 2. Mettre en topmost puis normal
+            ctypes.windll.user32.SetWindowPos(hwnd, -1, 0, 0, 0, 0, 0x0001 | 0x0002)  # HWND_TOPMOST
+            ctypes.windll.user32.SetWindowPos(hwnd, -2, 0, 0, 0, 0, 0x0001 | 0x0002)  # HWND_NOTOPMOST
+            # 3. Forcer le focus
+            ctypes.windll.user32.SetForegroundWindow(hwnd)
 
     @Slot()
     def quit_app(self):
@@ -467,7 +478,7 @@ class AudioRecorder(QMainWindow):
 def main():
     app = QApplication(sys.argv)
     if is_already_running():
-        QMessageBox.information(None, "Déjà lancé", "L'application de transcription est déjà en cours d'exécution.")
+        send_show_request()  # <-- Affiche la fenêtre de l'instance déjà lancée
         return
     recorder = AudioRecorder()
     start_local_server(recorder)  # Pour gestion systray multi-instance
