@@ -13,6 +13,8 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QFont, QIcon, QAction, QKeySequence, QShortcut
 from PySide6.QtCore import QTimer, Qt, Signal, Slot
+from PySide6.QtCore import QSharedMemory, QSystemSemaphore  # Ajout pour instance unique
+from PySide6.QtNetwork import QLocalServer, QLocalSocket
 
 import openai
 import pyperclip
@@ -20,6 +22,50 @@ import platform
 import webbrowser
 
 ICON_PATH = os.path.join(os.path.dirname(__file__), "mic.png")  # mets une icône dans ton dossier
+
+SINGLE_INSTANCE_KEY = "VoiceTranscriptorAppUniqueKey"
+shared_memory = None
+local_server = None  # Ajout
+
+def is_already_running():
+    global shared_memory
+    semaphore = QSystemSemaphore(SINGLE_INSTANCE_KEY + "_sem", 1)
+    semaphore.acquire()
+    # Nettoyage du segment mémoire partagé s'il existe déjà (cas d'un crash)
+    temp_shared = QSharedMemory(SINGLE_INSTANCE_KEY)
+    if temp_shared.attach():
+        temp_shared.detach()
+    shared_memory = QSharedMemory(SINGLE_INSTANCE_KEY)
+    already_running = not shared_memory.create(1)
+    semaphore.release()
+    return already_running
+
+def send_show_request():
+    socket = QLocalSocket()
+    socket.connectToServer(SINGLE_INSTANCE_KEY)
+    if socket.waitForConnected(500):
+        socket.write(b"show")
+        socket.flush()
+        socket.waitForBytesWritten(500)
+        socket.disconnectFromServer()
+
+def start_local_server(main_window):
+    global local_server
+    local_server = QLocalServer()
+    try:
+        QLocalServer.removeServer(SINGLE_INSTANCE_KEY)
+    except Exception:
+        pass
+    local_server.listen(SINGLE_INSTANCE_KEY)
+    local_server.newConnection.connect(lambda: handle_new_connection(main_window))
+
+def handle_new_connection(main_window):
+    socket = local_server.nextPendingConnection()
+    if socket and socket.waitForReadyRead(500):
+        data = socket.readAll().data()
+        if data == b"show":
+            main_window.show_normal_window()
+    socket.disconnectFromServer()
 
 class AudioRecorder(QMainWindow):
     show_success_signal = Signal(str)
@@ -69,6 +115,8 @@ class AudioRecorder(QMainWindow):
         shortcut = QShortcut(QKeySequence("F9"), self)
         shortcut.activated.connect(self.toggle_recording)
 
+        self.force_quit = False
+
     def setup_systray(self):
         self.tray_icon = QSystemTrayIcon(QIcon(ICON_PATH), self)
         self.tray_icon.setToolTip("Enregistreur Vocal (F9 pour démarrer/arrêter)")
@@ -92,6 +140,7 @@ class AudioRecorder(QMainWindow):
 
     @Slot()
     def quit_app(self):
+        self.force_quit = True
         self.tray_icon.hide()
         self.close()
 
@@ -209,6 +258,23 @@ class AudioRecorder(QMainWindow):
         layout.addWidget(self.time_label, alignment=Qt.AlignCenter)
         layout.addWidget(self.button_container, alignment=Qt.AlignCenter)
         layout.addWidget(self.file_path_label, alignment=Qt.AlignCenter)
+
+        self.quit_btn = QPushButton("Quitter l'application")
+        self.quit_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #888;
+                color: white;
+                padding: 8px 16px;
+                border: none;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #b71c1c;
+            }
+        """)
+        self.quit_btn.clicked.connect(self.quit_app)
+        layout.addWidget(self.quit_btn, alignment=Qt.AlignCenter)
 
         self.loading_widget = QWidget()
         loading_layout = QVBoxLayout(self.loading_widget)
@@ -386,18 +452,25 @@ class AudioRecorder(QMainWindow):
         self.hide()
 
     def closeEvent(self, event):
-        event.ignore()
-        self.hide_to_systray()
-        self.tray_icon.showMessage(
-            "Toujours actif",
-            "L'application reste disponible dans la barre système.",
-            QSystemTrayIcon.Information,
-            2000
-        )
+        if self.force_quit:
+            event.accept()
+        else:
+            event.ignore()
+            self.hide_to_systray()
+            self.tray_icon.showMessage(
+                "Toujours actif",
+                "L'application reste disponible dans la barre système.",
+                QSystemTrayIcon.Information,
+                2000
+            )
 
 def main():
     app = QApplication(sys.argv)
+    if is_already_running():
+        QMessageBox.information(None, "Déjà lancé", "L'application de transcription est déjà en cours d'exécution.")
+        return
     recorder = AudioRecorder()
+    start_local_server(recorder)  # Pour gestion systray multi-instance
     recorder.hide_to_systray()
     sys.exit(app.exec())
 
