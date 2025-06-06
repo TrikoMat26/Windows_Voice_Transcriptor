@@ -17,6 +17,7 @@ from PySide6.QtCore import QTimer, Qt, Signal, Slot
 import openai
 import pyperclip
 import platform
+import webbrowser
 
 ICON_PATH = os.path.join(os.path.dirname(__file__), "mic.png")  # mets une icône dans ton dossier
 
