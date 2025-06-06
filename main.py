@@ -201,6 +201,10 @@ class AudioRecorder(QMainWindow):
         self.file_path_label.setWordWrap(True)
         self.file_path_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
+        self.billing_btn = QPushButton("Voir mes crédits OpenAI")
+        self.billing_btn.clicked.connect(lambda: webbrowser.open("https://platform.openai.com/account/billing"))
+        layout.addWidget(self.billing_btn, alignment=Qt.AlignCenter)
+
         layout.addWidget(self.time_label, alignment=Qt.AlignCenter)
         layout.addWidget(self.button_container, alignment=Qt.AlignCenter)
         layout.addWidget(self.file_path_label, alignment=Qt.AlignCenter)
