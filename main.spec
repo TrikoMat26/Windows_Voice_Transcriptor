@@ -35,5 +35,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['mic.ico'],
+    icon=['F:\\GitHub\\Voice_Transcriptor\\mic.ico'],
 )

@@ -21,7 +21,7 @@ import pyperclip
 import platform
 import webbrowser
 
-ICON_PATH = os.path.join(os.path.dirname(__file__), "mic.png")  # mets une icône dans ton dossier
+ICON_PATH = os.path.join(os.path.dirname(__file__), "mic.ico")  # mets une icône dans ton dossier
 
 SINGLE_INSTANCE_KEY = "VoiceTranscriptorAppUniqueKey"
 shared_memory = None
@@ -74,6 +74,7 @@ class AudioRecorder(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Enregistreur Vocal")
+        self.setWindowIcon(QIcon(ICON_PATH))
         self.setFixedSize(400, 250)
         self.setStyleSheet(self.get_platform_stylesheet())
 
